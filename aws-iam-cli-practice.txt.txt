@@ -1,0 +1,100 @@
+# AWS IAM CLI Practice Guide
+# Author: guna
+
+# Prerequisite: Run `aws configure` before using any of these commands.
+# All commands are for practice purpose on IAM: users, groups, roles.
+
+-------------------------
+Step 1: Create an IAM User
+-------------------------
+aws iam create-user --user-name guna-user
+
+-------------------------------
+Step 2: Create Console Login Access for the User
+-------------------------------
+aws iam create-login-profile --user-name guna-user \
+  --password 'TempPassword123!' \
+  --password-reset-required
+
+-----------------------------------------
+Step 3: Attach S3 ReadOnly Policy to User
+-----------------------------------------
+aws iam attach-user-policy --user-name guna-user \
+  --policy-arn arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess
+
+---------------------
+Step 4: Create a Group
+---------------------
+aws iam create-group --group-name guna-group
+
+------------------------------------------
+Step 5: Attach EC2 ReadOnly Policy to Group
+------------------------------------------
+aws iam attach-group-policy --group-name guna-group \
+  --policy-arn arn:aws:iam::aws:policy/AmazonEC2ReadOnlyAccess
+
+-----------------------------
+Step 6: Add User to the Group
+-----------------------------
+aws iam add-user-to-group --user-name guna-user --group-name guna-group
+
+--------------------------------------------
+Step 7: Create a Trust Policy JSON for a Role
+--------------------------------------------
+# Create a file named: trust-policy.json
+# (This file is required for creating the IAM Role)
+
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "ec2.amazonaws.com"
+      },
+      "Action": "sts:AssumeRole"
+    }
+  ]
+}
+
+--------------------------------------
+Step 8: Create IAM Role Using the File
+--------------------------------------
+aws iam create-role --role-name EC2S3AccessRole \
+  --assume-role-policy-document file://trust-policy.json
+
+------------------------------------
+Step 9: Attach S3 ReadOnly Policy to Role
+------------------------------------
+aws iam attach-role-policy --role-name EC2S3AccessRole \
+  --policy-arn arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess
+
+-----------------------------------
+Step 10: Verify IAM Resources (Optional)
+-----------------------------------
+aws iam list-users
+aws iam list-groups
+aws iam list-roles
+aws iam get-group --group-name guna-group
+
+----------------------------
+Optional: Cleanup Resources
+----------------------------
+aws iam detach-user-policy --user-name guna-user \
+  --policy-arn arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess
+
+aws iam remove-user-from-group --user-name guna-user --group-name guna-group
+
+aws iam detach-group-policy --group-name guna-group \
+  --policy-arn arn:aws:iam::aws:policy/AmazonEC2ReadOnlyAccess
+
+aws iam detach-role-policy --role-name EC2S3AccessRole \
+  --policy-arn arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess
+
+aws iam delete-login-profile --user-name guna-user
+aws iam delete-user --user-name guna-user
+aws iam delete-group --group-name guna-group
+aws iam delete-role --role-name EC2S3AccessRole
+rm trust-policy.json  # Only if you want to delete the local file
+
+# End of script

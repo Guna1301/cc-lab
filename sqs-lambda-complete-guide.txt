@@ -1,0 +1,172 @@
+# 🔁 AWS SQS → Lambda Trigger — Full Setup Guide
+# Author: guna
+
+🎯 Goal:
+When a message is sent to an SQS queue, a Lambda function is triggered automatically. The function logs the message.
+
+🛠️ You’ll Set Up:
+- SQS Standard Queue
+- Lambda Function
+- IAM Role with correct policies
+- CloudWatch Logs for output
+
+──────────────────────────────────────────────
+✅ STEP 1: Create an SQS Queue
+──────────────────────────────────────────────
+1. Go to AWS Console → SQS → Create Queue
+2. Queue type: Standard
+3. Queue name: `guna-queue`
+4. Leave all settings default:
+   - Encryption: Disabled
+   - Access Policy: Default
+   - Dead-letter Queue: Disabled
+5. Add a tag (optional)
+   - Key: project
+   - Value: guna-sqs-demo
+6. Click **Create Queue**
+
+──────────────────────────────────────────────
+✅ STEP 2: Send a Test Message
+──────────────────────────────────────────────
+1. Click on the newly created queue
+2. Click: “Send and receive messages”
+3. Enter message body:
+   hi guna
+4. Click “Send message”
+5. (Optional) Click “Poll for messages” — it will disappear once received.
+
+──────────────────────────────────────────────
+✅ STEP 3: Create a Lambda Function
+──────────────────────────────────────────────
+1. Go to AWS Console → Lambda → Create Function
+2. Select “Author from scratch”
+   - Function name: `SqsMessageProcessor`
+   - Runtime: Python 3.12
+3. Under Permissions:
+   - Choose: Create a new role with basic Lambda permissions
+4. Click “Create Function”
+
+──────────────────────────────────────────────
+✅ STEP 4: Add SQS Trigger to Lambda
+──────────────────────────────────────────────
+1. In your Lambda function, scroll to “Function overview”
+2. Click **“+ Add Trigger”**
+3. Choose:
+   - Trigger: SQS
+   - Queue: `guna-queue`
+   - Batch size: 1 (leave default)
+4. Click **Add**
+
+Lambda is now linked to SQS.
+
+──────────────────────────────────────────────
+✅ STEP 5: IAM Role Permissions (Policy Setup)
+──────────────────────────────────────────────
+The Lambda role must have permission to read from SQS.
+
+👉 Go to IAM → Roles → select the role created with the Lambda.
+
+▶ Attach an inline policy:
+Click **Add permissions → Create inline policy**
+
+Choose **JSON**, and paste:
+
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "sqs:ReceiveMessage",
+        "sqs:DeleteMessage",
+        "sqs:GetQueueAttributes"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
+
+Then click: **Review policy**  
+Policy name: `SqsAccessPolicy`  
+Click **Create policy**
+
+✅ Alternatively: attach **AmazonSQSFullAccess** policy (for practice only)
+
+──────────────────────────────────────────────
+✅ STEP 6: Lambda Code to Log Messages
+──────────────────────────────────────────────
+1. In Lambda → Code tab → replace default with:
+
+```python
+import json
+
+def lambda_handler(event, context):
+    print("Event received:")
+    print(json.dumps(event, indent=2))
+
+    for record in event.get('Records', []):
+        body = record['body']
+        print("Received message:", body)
+
+    return {
+        'statusCode': 200,
+        'body': 'Message processed.'
+    }
+
+
+Click Deploy
+
+──────────────────────────────────────────────
+✅ STEP 7: Send Another Message to Test
+──────────────────────────────────────────────
+
+Go back to SQS → guna-queue
+
+Click “Send and receive messages”
+
+Message body: Test from guna
+
+Click “Send message”
+
+Now go to:
+→ Lambda → Monitor → Logs → View logs in CloudWatch
+✅ You’ll see:
+
+csharp
+Copy code
+Received message: Test from guna
+──────────────────────────────────────────────
+🕒 NOTE: About the Timestamps in Logs
+──────────────────────────────────────────────
+
+CloudWatch logs are in UTC
+
+India time is UTC +5:30
+
+Example:
+
+Log: 2025-07-01T18:37:01Z = 2025-07-02 00:07 IST
+
+──────────────────────────────────────────────
+✅ OPTIONAL CLEANUP
+──────────────────────────────────────────────
+
+Delete Lambda function
+
+Delete SQS queue
+
+Delete IAM role or policy if not needed
+
+──────────────────────────────────────────────
+✅ SUCCESS!
+──────────────────────────────────────────────
+You now have a working setup:
+SQS Queue → triggers Lambda → logs messages into CloudWatch
+
+Extend it by:
+
+Writing to DynamoDB
+
+Sending notification via SNS
+
+Validating message content
