@@ -1,0 +1,132 @@
+# Amazon SNS + S3 Integration with Email and SMS Notifications
+# Author: guna
+
+## 🧩 Objective
+Set up an SNS topic to send notifications via email and SMS, triggered by an event in an S3 bucket (e.g., file upload).
+
+------------------------------------------------
+STEP 1: Create an SNS Topic
+------------------------------------------------
+1. Go to AWS Console → SNS → Topics → "Create topic"
+2. Select **Standard** as the type
+3. Name: 532-sns
+4. Leave defaults → Click **Create topic**
+
+------------------------------------------------
+STEP 2: Create Subscriptions to the SNS Topic
+------------------------------------------------
+We will add two subscriptions: one for email and one for SMS.
+
+### A. Email Subscription:
+1. Go to: SNS → Your topic (532-sns) → "Create subscription"
+2. Protocol: `Email`
+3. Endpoint: your email address (e.g., guna@example.com)
+4. Create subscription
+
+⚠️ Check your inbox and **confirm the subscription** via email.
+
+### B. SMS Subscription:
+1. SNS → Your topic → "Create subscription"
+2. Protocol: `SMS`
+3. Endpoint: phone number (e.g., `+91XXXXXXXXXX`)
+4. Click: Create subscription
+
+✅ No confirmation needed for SMS.
+
+------------------------------------------------
+STEP 3: Publish a Test Message
+------------------------------------------------
+1. Go to: SNS → Your topic → "Publish message"
+2. Subject: `Test Alert`
+3. Message: `This is a test from SNS.`
+4. Click: **Publish message**
+
+✔️ You will receive:
+- Email notification in your inbox (if confirmed)
+- SMS message on your phone
+
+------------------------------------------------
+STEP 4: Create an S3 Bucket
+------------------------------------------------
+1. Go to: S3 → Create bucket
+2. Name: `guna-sns-test-bucket` (must be globally unique)
+3. Leave all defaults → Create bucket
+
+------------------------------------------------
+STEP 5: Add Event Notification in S3 → Link to SNS
+------------------------------------------------
+1. Go to: S3 → `guna-sns-test-bucket` → Properties
+2. Scroll to **Event Notifications**
+3. Click **"Create Event Notification"**
+   - Name: `sns-upload-alert`
+   - Event Type: `All object create events`
+   - Destination: SNS
+   - Select topic: `532-sns`
+
+❌ You’ll see a permission error. Let’s fix that next.
+
+------------------------------------------------
+STEP 6: Fix SNS Access Policy for S3
+------------------------------------------------
+1. Go to: SNS → Topics → `532-sns` → Permissions → **Access policy**
+2. Click **Edit**
+
+### Replace the JSON policy with the following (update ARNs):
+
+```json
+{
+  "Version": "2008-10-17",
+  "Id": "__default_policy_ID",
+  "Statement": [
+    {
+      "Sid": "AllowS3ToPublish",
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "s3.amazonaws.com"
+      },
+      "Action": "SNS:Publish",
+      "Resource": "arn:aws:sns:ap-south-1:YOUR_ACCOUNT_ID:532-sns",
+      "Condition": {
+        "ArnLike": {
+          "aws:SourceArn": "arn:aws:s3:::guna-sns-test-bucket"
+        }
+      }
+    }
+  ]
+}
+ Replace:
+
+YOUR_ACCOUNT_ID with your actual AWS Account ID
+
+guna-sns-test-bucket with your S3 bucket name
+
+✅ Save the policy.
+
+STEP 7: Create the Event Notification Again in S3
+Go back to: S3 → Bucket → Properties → Event Notifications
+
+Re-create the event with:
+
+Event Type: All object create events
+
+Destination: SNS
+
+Topic: 532-sns
+
+✅ Now it will succeed.
+
+STEP 8: Test the Integration
+Upload any file (e.g., test.txt) to the S3 bucket.
+
+Result:
+
+Email will be received by the subscriber
+
+SMS will be sent to the registered phone number
+
+🧼 OPTIONAL CLEANUP
+Delete the S3 bucket (after emptying it)
+
+Delete SNS topic and subscriptions
+
+Remove access policy (if needed)
