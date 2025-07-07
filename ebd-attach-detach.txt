@@ -1,0 +1,56 @@
+Attaching and Detaching Volumes with in same region of EC2
+
+Step 1. Launching an Instance with Additional Volumes:
+- Start by launching an instance from the EC2 dashboard. Choose your desired AMI (Amazon Machine Image), instance type, and other configurations.
+
+- In the "Add Storage" step, you can add additional volumes. Specify the size and other attributes for these volumes.
+
+Step 2. Detaching a Volume from an Instance:
+  	 - Navigate to the EC2  and select "Volumes" under EBS section from the left-hand menu.
+  	 - Locate the volume you want to detach from the instance.
+ 	 - Select the volume, then choose "Actions" -> "Detach Volume".
+    	 - Confirm the detachment by clicking "Yes, Detach".
+
+Step 3. Attaching a Volume to Another Instance:
+  	 - After detaching the volume, it will become available. 
+ - Select the detached volume from the Volumes list.
+   	- Choose "Actions" -> "Attach Volume".
+   	- Select the instance you want to attach the volume to
+- specify the device name (e.g., /dev/sdf), and then click "Attach".
+   	- Once attached, the volume will appear as an additional disk on the chosen instance.
+Step 4: Attach and Mount EBS Volume to Linux EC2
+Attach the volume via AWS Console.
+•	Connect to EC2 via SSH.
+•	Check available disks (lsblk).
+Here you see root volume and attached (eg:-xvdf)
+
+lsblk -fs    # Check filesystem type
+Create a partition using fdisk:
+fdisk /dev/xvdf
+o	Press m → Show help menu
+o	Press n → Create a new partition
+o	Press p → Create a primary partition
+o	Press Enter twice → Use default partition size
+o	Press w → Write changes and exit
+Partprobe   # Inform the kernel about partition changes
+Verify the new partition:
+Lsblk  -fs
+Format the Disk Partition
+mkfs.xfs /dev/xvdf1   # For XFS
+Verify the filesystem:
+lsblk -fs
+Mount the Partition
+Steps:
+Create a directory for mounting: 
+1.	mkdir /mnt/archana
+Mount the partition: 
+2.	mount /dev/xvdf1 /mnt/archana
+Verify the mount: 
+3.	df -h
+Make the Mount Persistent
+Steps:
+Edit    /etc/fstab to add the following line: 
+nano /etc/fstab
+Add this line at the end: 
+<device>  <mount_point>  <filesystem_type>  defaults 0 0
+Now you see your volume is persistent 
