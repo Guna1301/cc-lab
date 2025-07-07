@@ -1,0 +1,79 @@
+SECTION 1: S3 Versioning
+-------------------------
+Versioning allows you to preserve, retrieve, and restore every version of every object stored in your S3 bucket.
+
+Steps:
+1. **Create a new bucket** with a globally unique name.
+2. **Go to the Properties tab** of the bucket → Enable **Versioning**.
+3. **Upload multiple objects** or the same object multiple times.
+4. **Delete any object**:
+   - A delete marker is created instead of removing the object.
+5. **Enable 'Show Versions'** in the bucket to see all versions.
+6. **Restore an object**:
+   - Delete the delete marker version.
+7. **Re-upload the same object**:
+   - New versions with unique timestamps are created.
+
+Benefits:
+- Prevents accidental deletes.
+- Supports rollback and auditing.
+
+---
+
+SECTION 2: Static Website Hosting
+----------------------------------
+Amazon S3 allows you to host static HTML/CSS/JS websites without a backend server.
+
+Steps:
+1. **Create a new S3 bucket** (must be globally unique).
+2. **Upload website files**: e.g., `index.html`, `error.html`.
+3. **Enable static website hosting**:
+   - Go to Properties → Static Website Hosting → Enable.
+   - Specify the `index.html` and `error.html` files.
+4. **Fix permissions**:
+   - Enable ACLs (Access Control Lists).
+   - Set objects to public.
+   - Optionally add a bucket policy for public read access.
+5. **Access the site** using the provided static web hosting endpoint.
+6. **Test error fallback**:
+   - Delete or rename `index.html` to see `error.html` in action.
+
+Use Case:
+- Perfect for hosting portfolios, landing pages, or documentation.
+
+---
+
+SECTION 3: Cross-Region Replication (CRR)
+-----------------------------------------
+CRR automatically replicates S3 objects from one bucket in one region to another bucket in a different region.
+
+Steps:
+1. **Create the source bucket** in one region (e.g., `ap-south-1`).
+   - Enable **Versioning** (mandatory).
+2. **Create the destination bucket** in a different region (e.g., `us-east-1`).
+   - Also enable **Versioning**.
+3. **Create a Replication Rule** in the source bucket:
+   - Go to Management tab → Replication Rules → Add rule.
+   - Choose the destination bucket.
+   - Choose or create an IAM role for replication.
+4. **Create a Batch Operation Job** (optional):
+   - Useful to replicate existing objects.
+   - Define IAM role, manifest, and destination settings.
+5. **Test replication**:
+   - Upload an object to the source bucket.
+   - Wait and verify it's replicated in the destination bucket.
+
+Bidirectional Replication (Optional):
+1. **Create a rule in the destination bucket** to replicate back to source.
+2. **Repeat the steps**: set destination, IAM role, and create a batch job.
+3. **Upload a file** in the destination bucket to see it appear in the source bucket.
+
+---
+
+Final Notes:
+- Ensure both buckets have versioning enabled.
+- IAM roles used in CRR must have S3 replication permissions.
+- Use batch jobs for large-scale replication.
+- S3 provides detailed logging and metrics in CloudWatch for monitoring replication.
+
+"""

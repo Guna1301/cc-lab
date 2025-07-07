@@ -1,0 +1,66 @@
+EXPERIMENT 1: EC2 Instance Setup and NGINX Deployment
+==================================================
+
+STEP 1: Create an EC2 Instance
+------------------------------
+1. Go to AWS EC2 Console ➜ Launch Instance.
+2. Select **Amazon Linux 2 AMI**.
+3. Choose an instance type (e.g., t2.micro).
+4. Create or select an existing key pair (.pem).
+5. Configure network, storage, and tags as required.
+6. Launch the instance.
+
+STEP 2: Connect to the Instance
+-------------------------------
+Method 1: Using `.pem` key (Linux/macOS/Git Bash)
+--------------------------------------------------
+chmod 400 your-key.pem
+ssh -i "your-key.pem" ec2-user@<public-ipv4>
+
+Method 2: Using `.ppk` key with PuTTY (Windows)
+-----------------------------------------------
+1. Open **PuTTYgen**.
+2. Load your `.pem` file → Save private key as `.ppk`.
+3. Open **PuTTY**:
+   - Host: `ec2-user@<public-ipv4>`
+   - Go to SSH ➜ Auth ➜ Browse and select your `.ppk` file.
+   - Click Open to connect.
+
+STEP 3: Optional – Start/Enable Apache (if used)
+------------------------------------------------
+sudo systemctl start httpd
+sudo systemctl enable httpd
+
+STEP 4: Install Docker and Run NGINX
+------------------------------------
+sudo yum update -y
+sudo yum install docker -y
+sudo service docker start
+sudo usermod -a -G docker ec2-user
+
+# Log out and reconnect to apply docker group permissions
+
+docker pull nginx
+docker run -d -p 80:80 nginx
+
+# Access NGINX from your browser:
+http://<public-ipv4>
+
+STEP 5: Modify the NGINX Default Page
+-------------------------------------
+docker ps   # Note down the container ID
+docker exec -it <container_id> /bin/bash
+cd /usr/share/nginx/html
+nano index.html
+
+# Inside nano, replace content like this:
+<h1>Hello from My EC2 NGINX Server!</h1>
+
+# Save (Ctrl+O), then exit (Ctrl+X).
+# Refresh the browser to view updated content.
+
+STEP 6: Summary of Files Used
+-----------------------------
+- `.pem` → SSH key used for Linux/macOS or Git Bash.
+- `.ppk` → PuTTY-compatible key, converted from `.pem`.
+

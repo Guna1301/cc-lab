@@ -1,0 +1,66 @@
+from pathlib import Path
+
+# Text content for the new .txt file
+doc_snapshots_efs = """AWS EBS Snapshots & EFS Walk‑Through
+===================================
+
+SECTION 1: EBS Snapshots
+------------------------
+Purpose: Back up an EBS volume and restore or copy it across regions.
+
+1. Launch a new EC2 instance and attach an extra 20 GB EBS volume.
+2. SSH into the instance and list block devices:
+     lsblk
+3. Partition, format, and mount the extra volume:
+     sudo -i
+     lsblk -l
+     fdisk /dev/xvdf
+       n  → new
+       p  → primary
+       ENTER (accept defaults)
+       w  → write
+     partprobe
+     mkfs.xfs /dev/xvdf1
+     mkdir /mnt/data
+     mount /dev/xvdf1 /mnt/data
+4. Make the mount persistent:
+     vi /etc/fstab
+     /dev/xvdf1 /mnt/data xfs defaults 0 0
+     mount -a
+5. Create a snapshot:
+     • EC2 Console → Volumes → select volume → Actions → Create Snapshot.
+6. Create a new volume from the snapshot:
+     • EC2 Console → Snapshots → select snapshot → Actions → Create Volume.
+7. Launch a new instance in the same AZ and attach the volume created from the snapshot.
+8. SSH into the new instance:
+     lsblk
+     mount /dev/xvdf1 /mnt/data   # if needed
+     ls /mnt/data                 # verify data (e.g., Maven_se folder).
+
+SECTION 2: AWS EFS
+------------------
+Purpose: Provide shared file storage that multiple EC2 instances can access simultaneously.
+
+1. Launch Instance‑1 in subnet / AZ “east‑a”.
+   • Create/choose a security group allowing inbound NFS (TCP 2049).
+2. Launch Instance‑2 in AZ “east‑c” using the *same* NFS security group.
+3. In AWS Console → EFS → Create File System.
+   • Ensure mount targets are created in both “east‑a” and “east‑c”.
+   • Modify each mount target’s security group to the NFS group.
+4. Retrieve the mount helper command:
+   • EFS Console → File System → Attach → Copy the command that starts with
+     sudo mount -t efs …
+5. From each instance:
+     sudo -i
+     mkdir /mnt/efs
+     yum install -y amazon-efs-utils
+     mount -t efs fs-XXXXXXXX:/ /mnt/efs
+     cd /mnt/efs
+     vi f1    # create a test file
+6. Verify that the test file appears on both instances.
+
+Clean‑Up Tips
+-------------
+• Unmount and detach volumes when finished to avoid charges.
+• Delete snapshots or EFS file system if no longer needed.
+"""

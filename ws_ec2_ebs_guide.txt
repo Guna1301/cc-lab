@@ -1,0 +1,99 @@
+from pathlib import Path
+
+# Define the content of the document
+doc_content = """
+AWS EC2 + EBS Volume: Step‑by‑Step Guide
+=======================================
+
+Goal: Launch an EC2 instance, attach an additional Elastic Block Store (EBS) volume, mount it inside the instance, and make the mount persistent across reboots.
+
+1. Prerequisites
+- AWS account with sufficient permissions to create EC2 instances and EBS volumes.
+- Key pair (.pem) to SSH into the instance.
+- Default VPC or appropriate networking configured.
+
+2. Launch an EC2 Instance
+- Navigate to EC2 Console ➜ Instances ➜ Launch instance.
+- Choose an AMI (e.g., Amazon Linux 2023).
+- Select Instance Type → e.g., t2.micro (can be changed later).
+- Configure Storage
+  - Root volume appears by default.
+  - Click Add New Volume ➜ set Volume Type (gp3), Size (e.g., 8 GiB).
+  - Note the Availability Zone (AZ)—you will need it later if you attach external volumes.
+- Configure security group, key pair, tags, then Launch.
+
+3. Review Existing Instances & Volumes
+- In EC2 Console → Instances, verify the new instance state = running.
+- In EC2 Console → Elastic Block Store → Volumes, you should see:
+  - The root volume (e.g., /dev/xvda) attached to the instance.
+  - Your extra data volume (e.g., /dev/xvdb) attached.
+
+4. (Optional) Change Instance Type (t2.micro → t2.medium)
+- Stop the instance.
+- Actions ➜ Instance Settings ➜ Change instance type.
+- Choose t2.medium, Apply.
+- Start the instance and verify the new type in the console.
+
+5. Verify Block Devices Inside the Instance
+ssh -i <keypair>.pem ec2-user@<PublicIP>
+sudo lsblk
+
+Expected output:
+NAME  MAJ:MIN RM SIZE RO TYPE MOUNTPOINT
+xvda1 202:1    0  10G  0 part /
+xvdb  202:16   0  20G  0 disk
+
+6. Attach an Existing External EBS Volume (after Instance Creation)
+- Create/identify the EBS volume you want to attach.
+- Ensure the volume’s AZ matches the instance’s AZ (e.g., ap-south-1a).
+- Select the volume → Actions ➜ Attach volume → choose your instance and device name (e.g., /dev/xvdf) → Attach.
+- Run `sudo lsblk` again to confirm the new disk.
+
+7. Partition, Format & Mount the New Volume
+sudo -i
+lsblk -l
+fdisk /dev/xvdf
+# In fdisk:
+#  n    → new partition
+#  p    → primary
+#  <Enter> accept defaults
+#  w    → write and exit
+
+partprobe /dev/xvdf
+mkfs.xfs /dev/xvdf1
+mkdir -p /mnt/cseb
+mount /dev/xvdf1 /mnt/cseb
+lsblk -fs
+
+8. Make the Mount Persistent
+sudo vi /etc/fstab
+# Add:
+/dev/xvdf1   /mnt/cseb   xfs   defaults   0   0
+
+mount -a
+df -hT
+
+9. Test & Use the Volume
+cd /mnt/cseb
+git clone https://github.com/user/repo.git
+touch file{1..10}
+ls
+
+Reboot and confirm mount.
+
+10. Clean-Up (if required)
+sudo umount /mnt/cseb
+Detach volume in the EC2 console
+Delete volume to avoid charges
+
+Quick Commands:
+sudo -i
+lsblk -l
+fdisk /dev/xvdf
+partprobe /dev/xvdf
+mkfs.xfs /dev/xvdf1
+mkdir /mnt/cseb
+mount /dev/xvdf1 /mnt/cseb
+vi /etc/fstab
+mount -a
+"""
